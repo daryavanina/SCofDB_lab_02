@@ -61,7 +61,7 @@ class PaymentService:
         # TODO: Реализовать логику оплаты БЕЗ блокировок
         # raise NotImplementedError("TODO: Реализовать PaymentService.pay_order_unsafe")
         async with self.session.begin():
-            # 1. Читаем статус БЕЗ блокировки
+            # 1. статус БЕЗ блокировки
             result = await self.session.execute(
                 text("SELECT status FROM orders WHERE id = :order_id"),
                 {"order_id": str(order_id)},
@@ -75,7 +75,6 @@ class PaymentService:
                 raise OrderAlreadyPaidError(order_id)
 
             # Задержка чтобы обе транзакции успели прочитать статус
-            # прежде чем одна из них запишет — это воспроизводит race condition
             import asyncio
             await asyncio.sleep(0.1)
 
@@ -173,7 +172,6 @@ class PaymentService:
                 {"order_id": str(order_id)},
             )
 
-            # Пишем в историю вручную — триггера нет
             await self.session.execute(
                 text("""
                     INSERT INTO order_status_history (id, order_id, status, changed_at)
